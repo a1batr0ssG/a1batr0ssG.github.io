@@ -1,11 +1,11 @@
 <!DOCTYPE html><html lang="en" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>ChatGPT账户接管-URL规范化缓存欺骗漏洞 | a1batr0ss's blog</title><meta name="keywords" content="ChatGPT,缓存欺骗,账户接管,URL规范化,CDN"><meta name="author" content="a1batr0ss"><meta name="copyright" content="a1batr0ss"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="ChatGPT账户接管-URL规范化缓存欺骗漏洞文章介绍原文地址：https:&#x2F;&#x2F;nokline.github.io&#x2F;bugbounty&#x2F;2024&#x2F;02&#x2F;04&#x2F;ChatGPT-ATO.html 原文作者：Nokline 翻译作者：a1batr0ss（信天翁）  注：文章非机翻，均为作者凭借其 网络安全的专业功底 和 托福90+的英语功底 认真翻译。如在阅读时发现翻译错误或不通顺，欢迎私信提出问题，">
 <meta property="og:type" content="article">
 <meta property="og:title" content="ChatGPT账户接管-URL规范化缓存欺骗漏洞">
-<meta property="og:url" content="http://example.com/2024/03/16/ChatGPT%E8%B4%A6%E6%88%B7%E6%8E%A5%E7%AE%A1-URL%E8%A7%84%E8%8C%83%E5%8C%96%E7%BC%93%E5%AD%98%E6%AC%BA%E9%AA%97%E6%BC%8F%E6%B4%9E/index.html">
+<meta property="og:url" content="https://a1batr0ss.top/2024/03/16/ChatGPT%E8%B4%A6%E6%88%B7%E6%8E%A5%E7%AE%A1-URL%E8%A7%84%E8%8C%83%E5%8C%96%E7%BC%93%E5%AD%98%E6%AC%BA%E9%AA%97%E6%BC%8F%E6%B4%9E/index.html">
 <meta property="og:site_name" content="a1batr0ss&#39;s blog">
 <meta property="og:description" content="ChatGPT账户接管-URL规范化缓存欺骗漏洞文章介绍原文地址：https:&#x2F;&#x2F;nokline.github.io&#x2F;bugbounty&#x2F;2024&#x2F;02&#x2F;04&#x2F;ChatGPT-ATO.html 原文作者：Nokline 翻译作者：a1batr0ss（信天翁）  注：文章非机翻，均为作者凭借其 网络安全的专业功底 和 托福90+的英语功底 认真翻译。如在阅读时发现翻译错误或不通顺，欢迎私信提出问题，">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="http://example.com/img/gd.jpg">
+<meta property="og:image" content="https://a1batr0ss.top/img/gd.jpg">
 <meta property="article:published_time" content="2024-03-16T13:00:00.000Z">
 <meta property="article:modified_time" content="2024-06-27T06:53:48.261Z">
 <meta property="article:author" content="a1batr0ss">
@@ -15,7 +15,7 @@
 <meta property="article:tag" content="URL规范化">
 <meta property="article:tag" content="CDN">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://example.com/img/gd.jpg"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="http://example.com/2024/03/16/ChatGPT%E8%B4%A6%E6%88%B7%E6%8E%A5%E7%AE%A1-URL%E8%A7%84%E8%8C%83%E5%8C%96%E7%BC%93%E5%AD%98%E6%AC%BA%E9%AA%97%E6%BC%8F%E6%B4%9E/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//www.google-analytics.com" crossorigin=""/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.css" media="print" onload="this.media='all'"><script async="async" src="https://www.googletagmanager.com/gtag/js?id=G-PZYRXDQ81W"></script><script>window.dataLayer = window.dataLayer || [];
+<meta name="twitter:image" content="https://a1batr0ss.top/img/gd.jpg"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://a1batr0ss.top/2024/03/16/ChatGPT%E8%B4%A6%E6%88%B7%E6%8E%A5%E7%AE%A1-URL%E8%A7%84%E8%8C%83%E5%8C%96%E7%BC%93%E5%AD%98%E6%AC%BA%E9%AA%97%E6%BC%8F%E6%B4%9E/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//www.google-analytics.com" crossorigin=""/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.css" media="print" onload="this.media='all'"><script async="async" src="https://www.googletagmanager.com/gtag/js?id=G-PZYRXDQ81W"></script><script>window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'G-PZYRXDQ81W');
