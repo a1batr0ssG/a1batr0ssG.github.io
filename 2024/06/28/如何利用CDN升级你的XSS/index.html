@@ -1,0 +1,295 @@
+<!DOCTYPE html><html lang="en" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>如何利用CDN升级你的XSS | a1batr0ss's blog</title><meta name="keywords" content="缓存欺骗,URL规范化,CDN,XSS"><meta name="author" content="a1batr0ss"><meta name="copyright" content="a1batr0ss"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="如何利用CDN升级你的XSS我将展示我是如何能够通过反射型和存储型XSS在Glassdoor上对数千个页面进行缓存投毒的。 介绍想象一下，你的朋友推荐了一个新的、看起来很酷的漏洞赏金项目给你，你听说有人通过这个挑战赚了不少钱，学了不少技能，所以你兴奋地开始尝试。但是，经过几天紧张的探索和研究，你却两手空空、一无所获。你开始怀疑自己，所以你开始寻找低危漏洞，突然你发现了一个header XSS。起初">
+<meta property="og:type" content="article">
+<meta property="og:title" content="如何利用CDN升级你的XSS">
+<meta property="og:url" content="http://example.com/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/index.html">
+<meta property="og:site_name" content="a1batr0ss&#39;s blog">
+<meta property="og:description" content="如何利用CDN升级你的XSS我将展示我是如何能够通过反射型和存储型XSS在Glassdoor上对数千个页面进行缓存投毒的。 介绍想象一下，你的朋友推荐了一个新的、看起来很酷的漏洞赏金项目给你，你听说有人通过这个挑战赚了不少钱，学了不少技能，所以你兴奋地开始尝试。但是，经过几天紧张的探索和研究，你却两手空空、一无所获。你开始怀疑自己，所以你开始寻找低危漏洞，突然你发现了一个header XSS。起初">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/img/gd.jpg">
+<meta property="article:published_time" content="2024-06-28T01:04:48.000Z">
+<meta property="article:modified_time" content="2024-06-28T01:17:11.758Z">
+<meta property="article:author" content="a1batr0ss">
+<meta property="article:tag" content="缓存欺骗">
+<meta property="article:tag" content="URL规范化">
+<meta property="article:tag" content="CDN">
+<meta property="article:tag" content="XSS">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/img/gd.jpg"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="http://example.com/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//www.google-analytics.com" crossorigin=""/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.css" media="print" onload="this.media='all'"><script async="async" src="https://www.googletagmanager.com/gtag/js?id=G-PZYRXDQ81W"></script><script>window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-PZYRXDQ81W');
+</script><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"簡"},
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":50,"languages":{"author":"Author: a1batr0ss","link":"Link: ","source":"Source: a1batr0ss's blog","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery@2/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery@2/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '如何利用CDN升级你的XSS',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: false,
+  postUpdate: '2024-06-28 09:17:11'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.1.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">Loading...</div></div></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/avatar.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data is-center"><div class="data-item"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">4</div></a></div><div class="data-item"><a href="/tags/"><div class="headline">Tags</div><div class="length-num">8</div></a></div><div class="data-item"><a href="/categories/"><div class="headline">Categories</div><div class="length-num">2</div></a></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> Link</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('/img/gd.jpg')"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">a1batr0ss's blog</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> Link</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">如何利用CDN升级你的XSS</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">Created</span><time class="post-meta-date-created" datetime="2024-06-28T01:04:48.000Z" title="Created 2024-06-28 09:04:48">2024-06-28</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">Updated</span><time class="post-meta-date-updated" datetime="2024-06-28T01:17:11.758Z" title="Updated 2024-06-28 09:17:11">2024-06-28</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E5%9B%BD%E5%A4%96%E6%96%87%E7%AB%A0%E7%BF%BB%E8%AF%91-%E8%A7%A3%E8%AF%BB/">国外文章翻译/解读</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">4.4k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>15min</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="如何利用CDN升级你的XSS"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">Post View:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div></header><main class="layout hide-aside" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="如何利用CDN升级你的XSS"><a href="#如何利用CDN升级你的XSS" class="headerlink" title="如何利用CDN升级你的XSS"></a>如何利用CDN升级你的XSS</h1><p>我将展示我是如何能够通过反射型和存储型XSS在<strong>Glassdoor</strong>上对数千个页面进行缓存投毒的。</p>
+<h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>想象一下，你的朋友推荐了一个新的、看起来很酷的漏洞赏金项目给你，你听说有人通过这个挑战赚了不少钱，学了不少技能，所以你兴奋地开始尝试。但是，经过几天紧张的探索和研究，你却两手空空、一无所获。你开始怀疑自己，所以你开始寻找低危漏洞，突然你发现了一个header XSS。起初你不以为然，直到你意识到目标系统有个<strong>缓存服务器</strong>（比如CloudFlare）！你尝试找到一种缓存XSS的方法，但一直失败。你运气很不好，看起来他们这个端点存在web缓存投毒保护，使得XSS无法被缓存。就在你以为你发现了高危漏洞时，现实给了你一记重拳，让你感觉无路可走。那现在你打算怎么办呢？要不要试一试<strong>URL解析混淆</strong>？</p>
+<p><img src="/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/image-20240329111152061-1719536717507-1.png" alt="image-20240329111152061"></p>
+<h2 id="寻找XSS"><a href="#寻找XSS" class="headerlink" title="寻找XSS"></a>寻找XSS</h2><p>当测试XSS的时候，你需要考虑到所有类型的利用方法，并且记下所有看起来有趣的内容。就算有些地方现在无法利用，试试看它有没有可能和其他漏洞进行组合。很多时候，攻击链由本身无法利用的链接组成，这些链接单独看来是无用的，但当它们链接在一起时可能会造成致命的后果。在Glassdoor，我发现了上述这种端点： <code>/Job/new-york-ny-compliance-officer-jobs-SRCH_IL.0,11_IC1132348_KO12,42069.htm</code>。</p>
+<p>我发现参数名（以及参数值）在响应中<strong>未经过滤</strong>地被映射出来。看到这一点我非常惊讶，因为这应该早就被发现了。Glassdoor有将近800个漏洞提交，所以我并不认为只有我注意到这一点。这个参数在脚本标签中的一个字符串里被反射，所以为了实现XSS，我有两种选择：</p>
+<ol>
+<li>逃逸字符串并注入JavaScript</li>
+<li>关闭脚本标签并注入一个通用的XSS payload</li>
+</ol>
+<p>对于第一种选择，字符串似乎已经用反斜杠进行了转义，绕过这种转义很难。第二种选择看起来就有戏多了，因为用户的输入都没有被过滤，所以注入一个<code>&lt;/script&gt;</code>应该能成功。然而，当我放入 <code>?&lt;/script&gt;</code>（这里为了便于阅读进行了URL解码）时，我的请求立刻被WAF拦截并阻止了。这完全在我预料之中，不过我对付WAF就像吃早餐一样轻松 &gt;:)。【这个表情有点意思，你头往左歪是个邪恶的笑脸，头往右歪是个sad的表情】</p>
+<p><img src="/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/image-20240329094635936-1719536717507-2.png" alt="image-20240329094635936"></p>
+<p>在试着和WAF斗智斗勇之前，我们必须先了解这个WAF的规则。一个我经常看到的错误是，当人们试图绕过WAF或一般的过滤器时，他们会复制和粘贴通用的WAF绕过payload，而实际上并不理解WAF为什么会阻止他们的请求。根据我的经验，疯狂尝试和祈祷绕过WAF能成功通常是浪费时间，所以最好是手动测试它们，理解它们的特定规则。所以我绕WAF的第一步就是对被拦截的payload，一个字符一个字符地移除，直到WAF让它通过。幸运的是，我和WAF很快达成了一致。我只需要移除 <code>&gt;</code> 就可以得到200响应。</p>
+<p>所以现在的问题是，还是什么字符WAF不喜欢？看起来<code>&lt;/script</code>之后的任何字符都会引起WAF的注意，比如 <code>&lt;/scriptaaa</code> 。如果WAF真的阻止了<code>&lt;/script*</code>那就难搞了，但幸运的是WAF允许空白字符，例如 <code>%20</code> (空格)，这意味着最终脚本标签将在下一个出现的<code>&gt;</code> 处关闭。</p>
+<p><img src="/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/image-20240329094443844-1719536717507-3.png" alt="image-20240329094443844"></p>
+<p>所以现在，下一步就变成了找到一个新的未被过滤的注入点，它允许我们关闭script标签并且注入一个HTML XSS payload。我试着是否能用其他参数把payload分成几部分，然而也被WAF阻止了。看来WAF的规则适用整个URL，而不是单独的参数。幸运的是，我之前就已经绕过了这一类的WAF。</p>
+<p>我首先采用的技术是基于字母数字的HTTP参数污染，我在过去已经用它绕过了这个程序中的一个类似的WAF。字母数字参数污染（详见下文解释）利用了字母数字参数的排序先后，因此将你的payload逆向分解到不同的参数中，可以绕过这样的WAF。不幸的是，这里和之前的情况不尽相同。</p>
+<p>此时我对这个端点失去了一些希望，所以我决定寻找一个漏洞与它组合利用。我开始留意cookie。此时我注意到了在注入点的附近，还真有这样一个值，它来自于我的请求中的 <code>optimizelyEndUserId</code> cookie。</p>
+<p>我现在需要做的是关闭脚本标签并注入HTML，在cookie里注入 <code>&gt;&lt;svg&gt;</code>似乎能解决这个问题。现在我需要实际执行JavaScript。我们已经度过了困难的部分，所以现在如果我们能够将一个SVG标签绕过WAF时，剩下的应该很容易。</p>
+<p>一个牛批的通用WAF绕过payload似乎可以解决这个问题：<code>&gt;&lt;svg/onload=a=self[&#39;aler&#39;%2B&#39;t&#39;]%3Ba(document.domain)&gt;·</code>。现在我们得到了一个这样的XSS：</p>
+<figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">GET</span> <span class="string">/Job/new-york-ny-compliance-officer-jobs-SRCH_IL.0,11_IC1132348_KO12,42069.htm?attack=VULN%3C/script%20</span> <span class="meta">HTTP/2</span></span><br><span class="line"><span class="attribute">Host</span><span class="punctuation">: </span>www.glassdoor.com</span><br><span class="line"><span class="attribute">Cookie</span><span class="punctuation">: </span>optimizelyEndUserId=BRUH&gt;&lt;svg/onload=a=self[&#x27;aler&#x27;%2B&#x27;t&#x27;]%3Ba(document.domain)&gt;</span><br><span class="line"><span class="attribute">User-Agent</span><span class="punctuation">: </span>Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0</span><br><span class="line"><span class="attribute">Content-Length</span><span class="punctuation">: </span>0</span><br></pre></td></tr></table></figure>
+
+<p>然而，这是一个Self XSS（不仅需要用户点击链接就能触发，还需要控制cookies）。但是，这可能会升级为通过缓存投毒的反射型XSS，所以这就是我接下来要开始寻找的。</p>
+<blockquote>
+<p> 字母数字参数污染（alphanumeric parameter pollution）：</p>
+<p> <strong>字母数字参数（alphanumeric parameter）</strong>是什么？</p>
+<p> “Alphanumeric parameter”指的是包含字母和数字的参数。</p>
+<p> <strong>参数污染（parameter pollution）</strong>是什么？</p>
+<p> 一句话来说就是不同的系统对于同名参数取哪个的问题有着不同的规则，利用这种规则在某些情况下可以篡改参数。</p>
+<p> <img src="/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/%E5%8F%82%E6%95%B0%E6%B1%A1%E6%9F%93.png" alt="参数污染"></p>
+<p> 如果还是有些云里雾里可以去看一下这篇文章（很简单很短）：<a target="_blank" rel="noopener" href="https://alonnsoandres.medium.com/http-parameter-pollution-ff14df6b018">https://alonnsoandres.medium.com/http-parameter-pollution-ff14df6b018</a></p>
+</blockquote>
+<h2 id="寻找有宽松规则的缓存"><a href="#寻找有宽松规则的缓存" class="headerlink" title="寻找有宽松规则的缓存"></a>寻找有宽松规则的缓存</h2><p>刚开始搜寻时，我总是喜欢测试缓存以查看它是如何表现的。如果我看到一条路径被缓存了，我总是测试它的极限。许多网站有着自己独特的规则缓存特定的路径和文件，所以手动测试这些规则是熟悉缓存服务器的不二之选。</p>
+<p>当我刚开始手动测试这些缓存规则时，我经常会先搞乱扩展名。我会移除、增加或改变扩展名然后仔细观察响应包里的缓存头和内容。当我测试完扩展名之后，我会测试路径本身。</p>
+<p>例如，我注意到<code>https://www.glassdoor.com/Award/new-york-ny-compliance-officer-jobs-SRCH_IL.0,11_IC1132348_KO12,42069.htm</code>被缓存了。我拦截了请求并发送到了BP的repeater模块来做进一步研究。</p>
+<p><img src="/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/image-20240329100428524-1719536717507-4.png" alt="image-20240329100428524"></p>
+<p>当我修改扩展名，我收到了404返回，但我仍然得到了MISS&#x2F;HIT的缓存头。这让我立刻思考，缓存或者不缓存是有一种模式的，而不是写死了哪些固定的文件被缓存。</p>
+<p>之后我开始测试路径，我尝试访问<code>https://www.glassdoor.com/Award/somerandomfile</code>，注意到它返回给我了相同的404页面和相同的缓存头。我几乎已经确信我找到了缓存规则，但以防万一我还是测试了一下<code>https://www.glassdoor.com/randompath/somerandomfile</code>，它返回给我404页面但是没有缓存头。</p>
+<p>现在可以确定缓存规则是<code>/Award/*</code>，代表<code>/Award</code>路径下的所有网页都会被缓存。我花了不少时间试着寻找某种请求头XSS以进行Web缓存投毒，但我一无所获。然而这个发现已经很好了，虽然它本身不是一个漏洞，但这么宽松的规则使它有很大的潜力和其他漏洞结合起来。</p>
+<blockquote>
+<p>Cf-Cache-Status缓存头的各种含义：</p>
+<ul>
+<li><code>HIT</code>表示资源已经被缓存，并且这个响应是从缓存中提供的。</li>
+<li><code>MISS</code>表示资源没有被缓存，因此请求被转发到了原始服务器。</li>
+<li><code>DYNAMIC</code>则特指资源当前未被缓存，并且是动态内容，通常不适合缓存。</li>
+<li><code>BYPASS</code> 表示Cloudflare 被指示不缓存该资源，而是直接从原始服务器获取内容。</li>
+</ul>
+</blockquote>
+<h2 id="Self-XSS升级为Reflected-XSS"><a href="#Self-XSS升级为Reflected-XSS" class="headerlink" title="Self-XSS升级为Reflected-XSS"></a>Self-XSS升级为Reflected-XSS</h2><p>web缓存投毒可以做很多事。我脑子里首先想到的是</p>
+<ol>
+<li>存储型XSS</li>
+<li>将无法利用的XSS升级到反射型XSS</li>
+<li>DoS</li>
+</ol>
+<p>在我发现缓存规则时，我已经知道在<code>/Job/new-york-ny-compliance-officer-jobs-SRCH_IL.0,11_IC1132348_KO12,42069.htm?VULN%3C/script%20</code>处存在无法被利用的XSS，所以很自然的，我打算把这个XSS和Web缓存投毒结合一下，变成一个反射型XSS。</p>
+<p>我回到Job路径下继续研究。我想看看是否有其他端点存在self XSS，事实证明是有的。我发现Job路径下的所有网页都存在self XSS，这真是太棒了！我继续研究，注意到甚至本应该返回404的页面都返回了200并且存在self XSS。</p>
+<p><img src="/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/image-20240329103717836-1719536717507-5.png" alt="image-20240329103717836"></p>
+<p>我们来回顾一下重要信息：</p>
+<ol>
+<li>CDN有一条规则会缓存<code>/Award/*</code></li>
+<li><code>/Job/*</code>存在XSS漏洞</li>
+</ol>
+<p>这两个漏洞的攻击面并不是“静态”的，而是依赖于一个非常宽松的通配符模式，这让我开始思考：“这些模式<em>真的</em>会接受任何内容吗？服务器会优先考虑这些模式而忽视特殊的URL语法，比如<code>/../</code>，还是会先标准化URL然后再匹配模式？”</p>
+<p>或者换句话说，后端服务器和前端服务器的URL解析器都会规范化这些点段吗？为了测试我的想法，我带着URL解析器会规范化点段的假设尝试了这两个payload：</p>
+<ol>
+<li><code>/Award/../this_should_not_cache</code></li>
+<li><code>/Job/../this_should_give_a_404</code></li>
+</ol>
+<p>令我惊讶的是，它们给出了不同的结果。</p>
+<ul>
+<li>Award的payload没有被缓存，意味着前端服务器的URL解析器在匹配缓存规则之前规范化了点段。</li>
+<li>然而Job路径却返回了200，意味着后端web服务器没有规范化点段。</li>
+</ul>
+<p>所以总结一下这个简短的测试，前端服务器和后端服务器在如何解析点段的问题上存在不同。知道了这个，我们可以构造出如下的payload：</p>
+<figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">GET</span> <span class="string">/Job/../Award/RANDOMPATHTATDOESNOTEXIST?cachebuster=046&amp;attack=VULN%3C/script%20</span> <span class="meta">HTTP/2</span></span><br><span class="line"><span class="attribute">Host</span><span class="punctuation">: </span>www.glassdoor.com</span><br><span class="line"><span class="attribute">Cookie</span><span class="punctuation">: </span>optimizelyEndUserId=BRUH&gt;&lt;svg/onload=a=self[&#x27;aler&#x27;%2B&#x27;t&#x27;]%3Ba(document.domain)&gt;</span><br><span class="line"><span class="attribute">User-Agent</span><span class="punctuation">: </span>Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0</span><br><span class="line"><span class="attribute">Content-Length</span><span class="punctuation">: </span>0</span><br></pre></td></tr></table></figure>
+
+<p>因为web服务器不会规范化点段，我们能得到含有XSS的响应。但是，因为前端会规范化点段，<code>/Award/RANDOMPATHTATDOESNOTEXIST?cachebuster=046&amp;attack=VULN%3C/script%20</code>会被缓存（并且存储）。所以现在，当受害者访问<code>https://glassdoor.com/Award/RANDOMPATHTATDOESNOTEXIST?cachebuster=046&amp;attack=VULN%3C/script%20</code>，他们会从CDN得到含有XSS的被缓存的响应。</p>
+<p>我在这里作了一张大致流程图方便大家理解：</p>
+<p><img src="/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/image-20240329104318957-1719536717508-6.png" alt="image-20240329104318957"></p>
+<blockquote>
+<p>Self-XSS和Rflected-XSS的区别是什么？</p>
+<p>Self-XSS是指的那些不仅需要控制URL，还需要控制header、cookie等的XSS。这就使得并不是攻击者发送恶意链接后，受害者点击就能触发。攻击者还要能控制受害者的cookie等，使得利用条件困难。</p>
+<p>Rflected-XSS是指的那些攻击者仅需要构造恶意URL链接，诱使受害者点击即可触发的XSS，利用相对简单。</p>
+</blockquote>
+<h2 id="Self-XSS升级为Stored-XSS"><a href="#Self-XSS升级为Stored-XSS" class="headerlink" title="Self-XSS升级为Stored-XSS"></a>Self-XSS升级为Stored-XSS</h2><p>我一获得这个反射型XSS的POC就立刻报告了。然而我仍然不够满意，因为我知道这里可能会存在存储型XSS。</p>
+<p>所以我一直在寻找一个真正只基于头部的XSS，它的行为类似于<code>/Job/*</code>，在其下的每个页面都可能发生XSS。我想起了我第一次向glassdoor提供的报告，一个通过字母数字顺序参数污染实现的XSS：<a target="_blank" rel="noopener" href="http://glassdoor.com/mz-survey/start_input.htm%E3%80%82%EF%BC%88%E6%AD%A4%E6%97%B6%E8%BF%99%E4%B8%AA%E6%BC%8F%E6%B4%9E%E4%BB%8D%E7%84%B6%E5%8F%AF%E4%BB%A5%E8%A7%A6%E5%8F%91%EF%BC%8C%E5%B9%B6%E6%9C%AA%E8%A2%AB%E4%BF%AE%E5%A4%8D%EF%BC%89%E6%88%91%E8%AE%A4%E4%B8%BA%E6%88%91%E5%8F%AF%E8%83%BD%E5%9C%A8%E9%82%A3%E4%B9%9F%E5%8F%AF%E4%BB%A5%E6%89%BE%E5%88%B0%E4%B8%80%E4%B8%AA%E5%A4%B4%E9%83%A8XSS%EF%BC%8C%E6%89%80%E4%BB%A5%E6%88%91%E7%BB%A7%E7%BB%AD%E7%A0%94%E7%A9%B6%E3%80%82%E5%B9%B8%E8%BF%90%E7%9A%84%E6%98%AF%EF%BC%8C%E6%88%91%E6%8A%A5%E5%91%8A%E4%B8%AD%E7%9A%84%E5%8F%8D%E5%B0%84%E5%9E%8BXSS%E4%B9%9F%E5%AD%98%E5%9C%A8%E5%AE%8C%E5%85%A8%E5%A4%B4%E9%83%A8XSS%E6%BC%8F%E6%B4%9E%EF%BC%81%E4%BD%86%E6%98%AF%E5%AE%83%E7%9A%84%E8%A1%A8%E7%8E%B0%E5%B9%B6%E4%B8%8D%E5%83%8F%60/Job/*%60%E9%82%A3%E6%A0%B7%EF%BC%8C%E5%85%B6%E4%B8%8B%E7%9A%84%E6%AF%8F%E4%B8%AA%E9%A1%B5%E9%9D%A2%E9%83%BD%E5%AD%98%E5%9C%A8%E6%BC%8F%E6%B4%9E%EF%BC%8C%E6%89%80%E4%BB%A5%E8%BF%99%E5%9F%BA%E6%9C%AC%E4%B8%8A%E6%B2%A1%E4%BB%80%E4%B9%88%E7%94%A8%E3%80%82%E6%88%91%E8%AE%B0%E7%9D%80%E8%BF%99%E4%B8%8D%E6%98%AF%E5%94%AF%E4%B8%80%E4%B8%80%E4%B8%AA%E5%AD%98%E5%9C%A8%E6%BC%8F%E6%B4%9E%E7%9A%84%E7%AB%AF%E7%82%B9%EF%BC%8C%E5%85%B6%E4%BB%96%E4%B9%9F%E6%9C%89%E4%B8%8D%E5%B0%91%E3%80%82">http://glassdoor.com/mz-survey/start_input.htm。（此时这个漏洞仍然可以触发，并未被修复）我认为我可能在那也可以找到一个头部XSS，所以我继续研究。幸运的是，我报告中的反射型XSS也存在完全头部XSS漏洞！但是它的表现并不像`/Job/*`那样，其下的每个页面都存在漏洞，所以这基本上没什么用。我记着这不是唯一一个存在漏洞的端点，其他也有不少。</a></p>
+<p>幸运的是，在我测试完之前提交的每一个漏洞端点后，我找到了一个既存在头部XSS，表现又类似于 <code>/Job/*</code>的端点（<code>/mz-survey/*</code>）：<a target="_blank" rel="noopener" href="https://glassdoor.com/mz-survey/interview/collectQuestions_input.htm/%E3%80%82payload%E5%A4%A7%E6%A6%82%E6%98%AF%E8%BF%99%E6%A0%B7">https://glassdoor.com/mz-survey/interview/collectQuestions_input.htm/。payload大概是这样</a></p>
+<figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">GET</span> <span class="string">/mz-survey/interview/collectQuestions_input.htm/../../../Award/RANDOMPATHTATDOESNOTEXIST123?cachebuster=050</span> <span class="meta">HTTP/2</span></span><br><span class="line"><span class="attribute">Host</span><span class="punctuation">: </span>www.glassdoor.com</span><br><span class="line"><span class="attribute">X-Forwarded-For</span><span class="punctuation">: </span>VULN</span><br><span class="line"><span class="attribute">X-Forwarded-For</span><span class="punctuation">: </span>VULN&gt;&lt;svg/onload=self[`alert`](document.domain)&gt;</span><br><span class="line"><span class="attribute">Cookie</span><span class="punctuation">: </span>gdId=VULN%22&lt;/script%20</span><br><span class="line"><span class="attribute">User-Agent</span><span class="punctuation">: </span>Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0</span><br><span class="line"><span class="attribute">Accept</span><span class="punctuation">: </span>text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8</span><br></pre></td></tr></table></figure>
+
+<p>我把XSS的payload拆分到2个header和1个cookie里的原因是为了绕过WAF，因为我无法把整个payload放到一个cookie或者header中。</p>
+<p>X-Forwarded-For的值在cookie之后被反射到响应中，所以我继续改造payload的机会就落在了这里。不幸的是，这个WAF甚至对X-Forwarded-For头更加严格，我无法使用任何特殊字符。</p>
+<p>很有趣的是，这里有另一个很酷的头部混淆，WAF只会阻断第一个X-Forwarded-For ，但是web服务器会解析并且反射剩下所有的X-Forwarded-For。这就让我很容易就绕过了WAF，我只要在第一个X-Forwarded-For 填上合法值，在第二个X-Forwarded-For 中填上我剩余的XSS payload就行了。</p>
+<p>附上Stored-XSS利用视频：</p>
+<p><video src="/2024/06/28/如何利用CDN升级你的XSS/Glassdoor_XSS.mp4" position="absolute" width="100%" height="100%" controls="controls"></video></p>
+<h2 id="笔者复测"><a href="#笔者复测" class="headerlink" title="笔者复测"></a>笔者复测</h2><p>我们来复测一下漏洞还是否存在，并分析一下是如何修复的，顺便看看有没有漏网之鱼：</p>
+<h3 id="Self-XSS"><a href="#Self-XSS" class="headerlink" title="Self-XSS"></a>Self-XSS</h3><figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">GET</span> <span class="string">/Job/new-york-ny-compliance-officer-jobs-SRCH_IL.0,11_IC1132348_KO12,42069.htm?attack=VULN%3C/script%20</span> <span class="meta">HTTP/2</span></span><br><span class="line"><span class="attribute">Host</span><span class="punctuation">: </span>www.glassdoor.com</span><br><span class="line"><span class="attribute">Cookie</span><span class="punctuation">: </span>optimizelyEndUserId=BRUH&gt;&lt;svg/onload=a=self[&#x27;aler&#x27;%2B&#x27;t&#x27;]%3Ba(document.domain)&gt;</span><br><span class="line"><span class="attribute">User-Agent</span><span class="punctuation">: </span>Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0</span><br><span class="line"><span class="attribute">Content-Length</span><span class="punctuation">: </span>0</span><br></pre></td></tr></table></figure>
+
+<p>我们可以看到URL里的script还是会在返回包中映射的</p>
+<p><img src="/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/image-20240327095132503-1719536717508-7.png" alt="image-20240327095132503"></p>
+<p>但是我们发现cookie里的optimizelyEndUserId已经不会在返回包里映射了。之后我又去测了一下原请求包中的其他cookie</p>
+<p><img src="/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/image-20240327095243032-1719536717508-8.png" alt="image-20240327095243032"></p>
+<p>我们看一下其他有哪些cookie在返回包中被映射了：</p>
+<p>gdId：</p>
+<p><img src="/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/image-20240327095533169-1719536717508-9.png" alt="image-20240327095533169"></p>
+<p>经过测试发现，script会被WAF拦截（我也尝试了大小写绕过，实体编码绕过也未成功）：</p>
+<p><img src="/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/image-20240327102150049-1719536717508-10.png" alt="image-20240327102150049"></p>
+<p><img src="/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/image-20240327102216301-1719536717508-11.png" alt="image-20240327102216301"></p>
+<p>剩下的indeedCtk也是同理，便不再赘述啦。</p>
+<p>而对于以下三个在Set-Cookie中映射的值，并不支持修改，因为一旦修改就会跳转403：</p>
+<p>gdsid、asst、bs：</p>
+<p><img src="/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/image-20240327095732310-1719536717508-12.png" alt="image-20240327095732310"></p>
+<p>修改后返回403：</p>
+<p><img src="/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/image-20240327101205181-1719536717508-13.png" alt="image-20240327101205181"></p>
+<p>由此我们可以总结，Glassdoor在修复这个Self-XSS漏洞上至少做了两个努力：</p>
+<ol>
+<li>删除了optimizelyEndUserId在返回包里的映射。</li>
+<li>加强了WAF的拦截能力：原本只拦截<code>&lt;/script&gt;</code>而放过<code>&lt;/script*</code>，而现在<code>script</code>也会拦截；<code>onload</code>等关键词也会被拦截。</li>
+</ol>
+<h3 id="Reflected-XSS"><a href="#Reflected-XSS" class="headerlink" title="Reflected-XSS"></a>Reflected-XSS</h3><figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">GET</span> <span class="string">/Job/../Award/RANDOMPATHTATDOESNOTEXIST?cachebuster=046&amp;attack=VULN%3C/script%20</span> <span class="meta">HTTP/2</span></span><br><span class="line"><span class="attribute">Host</span><span class="punctuation">: </span>www.glassdoor.com</span><br><span class="line"><span class="attribute">Cookie</span><span class="punctuation">: </span>optimizelyEndUserId=BRUH&gt;&lt;svg/onload=a=self[&#x27;aler&#x27;%2B&#x27;t&#x27;]%3Ba(document.domain)&gt;</span><br><span class="line"><span class="attribute">User-Agent</span><span class="punctuation">: </span>Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0</span><br><span class="line"><span class="attribute">Content-Length</span><span class="punctuation">: </span>0</span><br></pre></td></tr></table></figure>
+
+<p>此时我去测试了一下，发现<code>/Award/*</code>已经被设置为不缓存了：</p>
+<p><img src="/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/image-20240321092626245-1719536717508-14.png" alt="image-20240321092626245"></p>
+<p>但正常的页面还是会被缓存的：	</p>
+<p><img src="/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/image-20240327104811499-1719536717508-15.png" alt="image-20240327104811499"></p>
+<p>由此我们可以总结，Glassdoor现在对<code>/Award</code>下存在的资源才会进行缓存，而不是像原来那样缓存<code>/Award/*</code>。</p>
+<h3 id="Stored-XSS"><a href="#Stored-XSS" class="headerlink" title="Stored-XSS"></a>Stored-XSS</h3><figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">GET</span> <span class="string">/mz-survey/interview/collectQuestions_input.htm/../../../Award/RANDOMPATHTATDOESNOTEXIST123?cachebuster=050</span> <span class="meta">HTTP/2</span></span><br><span class="line"><span class="attribute">Host</span><span class="punctuation">: </span>www.glassdoor.com</span><br><span class="line"><span class="attribute">X-Forwarded-For</span><span class="punctuation">: </span>VULN</span><br><span class="line"><span class="attribute">X-Forwarded-For</span><span class="punctuation">: </span>VULN&gt;&lt;svg/onload=self[`alert`](document.domain)&gt;</span><br><span class="line"><span class="attribute">Cookie</span><span class="punctuation">: </span>gdId=VULN%22&lt;/script%20</span><br><span class="line"><span class="attribute">User-Agent</span><span class="punctuation">: </span>Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0</span><br><span class="line"><span class="attribute">Accept</span><span class="punctuation">: </span>text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8</span><br></pre></td></tr></table></figure>
+
+<p>由于我们已经知道<code>/Award/*</code>不会缓存了，我们直接复测原先的完全头部的反射型XSS能否继续利用。</p>
+<p>我们发现<code>/mz-surey</code>下，script不会被过滤，但是<code>&lt;</code>会被16进制Unicode编码为<code>\u003c</code>（URL编码也无法绕过），导致XSS无法被执行。而且似乎gdId的位置从X-Forwarded-For前面变到X-Forwarded-For后面去了。最后<code>/mz-surey/*</code>也不会被全部缓存了。</p>
+<p><img src="/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/image-20240327111315909-1719536717508-16.png" alt="image-20240327111315909"></p>
+<p>修复前对比：</p>
+<p><img src="/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/image-20240327111513369-1719536717508-17.png" alt="image-20240327111513369"></p>
+<p>复测完毕，原先的三个漏洞均已不存在。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>当目标站点存在CDN缓存时，可以查看有没有一些缓存上的漏洞，使得你挖到的XSS进行升级：</p>
+<ul>
+<li>self XSS –&gt; reflected XSS</li>
+<li>reflected XSS –&gt; Stored XSS</li>
+<li>甚至还可以 self XSS –&gt; Stored XSS</li>
+</ul>
+<p>至于漏洞利用大体的思路，看这张图即可：</p>
+<p><img src="/2024/06/28/%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8CDN%E5%8D%87%E7%BA%A7%E4%BD%A0%E7%9A%84XSS/image-20240327132912115-1719536717508-18.png" alt="image-20240327132912115"></p>
+<p>原文地址：<a target="_blank" rel="noopener" href="https://nokline.github.io/bugbounty/2022/09/02/Glassdoor-Cache-Poisoning.html">https://nokline.github.io/bugbounty/2022/09/02/Glassdoor-Cache-Poisoning.html</a></p>
+</article><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E7%BC%93%E5%AD%98%E6%AC%BA%E9%AA%97/">缓存欺骗</a><a class="post-meta__tags" href="/tags/URL%E8%A7%84%E8%8C%83%E5%8C%96/">URL规范化</a><a class="post-meta__tags" href="/tags/CDN/">CDN</a><a class="post-meta__tags" href="/tags/XSS/">XSS</a></div><div class="post_share"></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/2024/03/16/ChatGPT%E8%B4%A6%E6%88%B7%E6%8E%A5%E7%AE%A1-URL%E8%A7%84%E8%8C%83%E5%8C%96%E7%BC%93%E5%AD%98%E6%AC%BA%E9%AA%97%E6%BC%8F%E6%B4%9E/"><img class="next-cover" src="/img/gd.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">ChatGPT账户接管-URL规范化缓存欺骗漏洞</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><div><a href="/2024/03/16/ChatGPT%E8%B4%A6%E6%88%B7%E6%8E%A5%E7%AE%A1-URL%E8%A7%84%E8%8C%83%E5%8C%96%E7%BC%93%E5%AD%98%E6%AC%BA%E9%AA%97%E6%BC%8F%E6%B4%9E/" title="ChatGPT账户接管-URL规范化缓存欺骗漏洞"><img class="cover" src="/img/gd.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-03-16</div><div class="title">ChatGPT账户接管-URL规范化缓存欺骗漏洞</div></div></a></div><div><a href="/2024/03/04/ChatGPT%E8%B4%A6%E6%88%B7%E6%8E%A5%E7%AE%A1-Web%E7%BC%93%E5%AD%98%E6%AC%BA%E9%AA%97/" title="ChatGPT账户接管-Web缓存欺骗"><img class="cover" src="/img/gd.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-03-04</div><div class="title">ChatGPT账户接管-Web缓存欺骗</div></div></a></div></div></div></div></main><footer id="footer" style="background-image: url('/img/gd.jpg')"><div id="footer-wrap"><div class="copyright">&copy;2023 - 2024 By a1batr0ss</div><div class="footer_custom_text">Welcome. Feel Like Home.</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="Switch Between Traditional Chinese And Simplified Chinese">简</button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button id="go-up" type="button" title="Back To Top"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.js"></script><script>var preloader = {
+  endLoading: () => {
+    document.body.style.overflow = 'auto';
+    document.getElementById('loading-box').classList.add("loaded")
+  },
+  initLoading: () => {
+    document.body.style.overflow = '';
+    document.getElementById('loading-box').classList.remove("loaded")
+
+  }
+}
+window.addEventListener('load',preloader.endLoading())</script><div class="js-pjax"></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
